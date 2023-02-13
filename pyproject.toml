@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "timetable-to-image"
+version = "1.0.0"
+description = "The Python library provides functionality for generating a timetable image from an object representation"
+readme = "README.md"
+authors = [{ name = "potapovns", email = "ns.potapov73@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["timetable", "image"]
+dependencies = [
+    "Pillow>=9.4.0"
+]
+requires-python = ">=3.8"
