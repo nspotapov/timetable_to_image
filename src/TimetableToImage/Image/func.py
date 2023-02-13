@@ -1,6 +1,6 @@
 import os
 import datetime
-from src.TimetableToImage import Timetable
+from TimetableToImage import Timetable
 from PIL import Image, ImageDraw, ImageFont
 
 
