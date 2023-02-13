@@ -79,22 +79,22 @@ def generate_from_timetable_week(
     x_left_text_group_name = x_left_text_article + 400
     #
     font_regular_article = ImageFont.truetype(
-        os.path.join("../../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_article)
+        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_article)
     font_bold_article = ImageFont.truetype(
-        os.path.join("../../..", "fonts", fonts_folder, "font_bold.ttf"), font_size_article)
+        os.path.join("../..", "fonts", fonts_folder, "font_bold.ttf"), font_size_article)
     #
     font_regular_header = ImageFont.truetype(
-        os.path.join("../../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_header)
+        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_header)
     font_medium_header = ImageFont.truetype(
-        os.path.join("../../..", "fonts", fonts_folder, "font_medium.ttf"), font_size_header)
+        os.path.join("../..", "fonts", fonts_folder, "font_medium.ttf"), font_size_header)
     font_bold_header = ImageFont.truetype(
-        os.path.join("../../..", "fonts", fonts_folder, "font_bold.ttf"), font_size_header)
+        os.path.join("../..", "fonts", fonts_folder, "font_bold.ttf"), font_size_header)
     #
     font_regular_table_large = ImageFont.truetype(
-        os.path.join("../../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_table_large)
+        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_table_large)
     #
     font_regular_table_small = ImageFont.truetype(
-        os.path.join("../../..", "fonts", fonts_folder, "font_regular.ttf"),
+        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"),
         font_size_table_small)
     #
     text_timetable_for_group = "Расписание группы: "
