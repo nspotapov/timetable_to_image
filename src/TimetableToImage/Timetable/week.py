@@ -1,5 +1,5 @@
 import datetime
-from src.TimetableToImage import Timetable
+from TimetableToImage import Timetable
 
 
 class Week:

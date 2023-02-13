@@ -1,5 +1,5 @@
 import datetime
-from src.TimetableToImage import Timetable
+from TimetableToImage import Timetable
 
 
 def get_timetable_lesson_from_json(json_lesson: dict) -> Timetable.Lesson:
