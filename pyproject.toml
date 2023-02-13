@@ -38,6 +38,7 @@ push = true
 "pyproject.toml" = [
     'current_version = "{version}"',
 ]
+"src/TimetableToImage/__init__.py" = ["{version}"]
 "README.md" = [
     "{version}",
     "{pep440_version}",

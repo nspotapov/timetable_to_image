@@ -1,4 +1,4 @@
-import Image
-import Timetable
+from . import Image
+from . import Timetable
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
