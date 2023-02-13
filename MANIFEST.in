@@ -1,1 +1,3 @@
-recursive-include src/fonts/Golos-UI/*.ttf
+include src/fonts/Golos-UI/font_bold.ttf
+include src/fonts/Golos-UI/font_regular.ttf
+include src/fonts/Golos-UI/font_medium.ttf
