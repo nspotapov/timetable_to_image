@@ -22,15 +22,34 @@ def get_multiline_text_size(text_string: str, font: ImageFont.FreeTypeFont) -> t
     return text_width, text_height
 
 
+def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
+                               place_width: int, place_height: int) -> tuple:
+    """
+    Returns shift for draw text center of place
+
+    :param text:
+    :param font:
+    :param place_width:
+    :param place_height:
+    :return: tuple of shifts
+    """
+    text_width, text_height = get_multiline_text_size(text, font)
+    shift_x = (place_width - text_width) / 2
+    shift_y = (place_height - text_height) / 2
+    return shift_x, shift_y
+
+
 def generate_from_timetable_week(
         timetable_week: Timetable.Week,
         timetable_bells: Timetable.Bells = None,
         inverted: bool = False,
         text_promotion: str = None,
-        eng_lang: bool = False) -> Image:
+        eng_lang: bool = False,
+        font_path: str = None) -> Image:
     """
     Generate FULL-HD image of timetable
 
+    :param font_path: path to font
     :param timetable_week: Timetable.Week object
     :param timetable_bells: Timetable.Bells object
     :param inverted: set night theme of image
@@ -78,28 +97,31 @@ def generate_from_timetable_week(
     y_top_text_article = y_top_table_header / 5
     x_left_text_group_name = x_left_text_article + 400
     #
+    if font_path is None:
+        font_path = "calibri.ttf"
+    #
     font_regular_article = ImageFont.truetype(
-        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_article)
+        font_path, font_size_article)
     font_bold_article = ImageFont.truetype(
-        os.path.join("../..", "fonts", fonts_folder, "font_bold.ttf"), font_size_article)
+        font_path, font_size_article)
     #
     font_regular_header = ImageFont.truetype(
-        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_header)
+        font_path, font_size_header)
     font_medium_header = ImageFont.truetype(
-        os.path.join("../..", "fonts", fonts_folder, "font_medium.ttf"), font_size_header)
+        font_path, font_size_header)
     font_bold_header = ImageFont.truetype(
-        os.path.join("../..", "fonts", fonts_folder, "font_bold.ttf"), font_size_header)
+        font_path, font_size_header)
     #
     font_regular_table_large = ImageFont.truetype(
-        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"), font_size_table_large)
+        font_path, font_size_table_large)
     #
     font_regular_table_small = ImageFont.truetype(
-        os.path.join("../..", "fonts", fonts_folder, "font_regular.ttf"),
+        font_path,
         font_size_table_small)
     #
-    text_timetable_for_group = "Расписание группы: "
+    text_timetable_for_group = "Расписание группы:"
     if eng_lang:
-        text_timetable_for_group = "Timetable for group: "
+        text_timetable_for_group = "Timetable for group:"
     # article "Timetable group: "
     draw.text((x_left_text_article, y_top_text_article), text_timetable_for_group,
               font=font_regular_article,
@@ -112,10 +134,11 @@ def generate_from_timetable_week(
                   font=font_regular_article,
                   fill=content_color)
 
-    # article group name
-    draw.text((x_left_text_group_name, y_top_text_article), timetable_week.group,
-              font=font_bold_article,
-              fill=content_color)
+    if timetable_week.group:
+        # article group name
+        draw.text((x_left_text_group_name, y_top_text_article), timetable_week.group,
+                  font=font_bold_article,
+                  fill=content_color)
 
     # article week number
     if timetable_week.number is not None:
@@ -189,7 +212,7 @@ def generate_from_timetable_week(
                       font=font_medium_header, fill=content_color)
 
     # pairs by days
-    for i in range(table_rows_count):
+    for i in range(len(timetable_week.days)):
         timetable_day = timetable_week.days[i]
         timetable_day: Timetable.Day
         y_shift_day_name = 50
@@ -233,7 +256,7 @@ def generate_from_timetable_week(
                     while text_height > target_height:
                         ind += 1
                         new_text_font = ImageFont.truetype(
-                            os.path.join(os.getcwd(), "fonts", fonts_folder, "font_regular.ttf"),
+                            font_path,
                             new_text_font.size - 1)
                         text_lesson = lesson.get_splitted_string(row_split + ind)
                         text_width, text_height = get_multiline_text_size(text_lesson,
