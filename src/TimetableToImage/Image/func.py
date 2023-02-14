@@ -23,7 +23,7 @@ def get_multiline_text_size(text_string: str, font: ImageFont.FreeTypeFont) -> t
 
 
 def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
-                               place_width: int, place_height: int) -> tuple:
+                               place_width: int = None, place_height: int = None) -> tuple:
     """
     Returns shift for draw text center of place
 
@@ -34,8 +34,15 @@ def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
     :return: tuple of shifts
     """
     text_width, text_height = get_multiline_text_size(text, font)
-    shift_x = (place_width - text_width) / 2
-    shift_y = (place_height - text_height) / 2
+
+    shift_x = None
+    shift_y = None
+
+    if place_width is not None:
+        shift_x = (place_width - text_width) / 2
+    if place_height is not None:
+        shift_y = (place_height - text_height) / 2
+
     return shift_x, shift_y
 
 
