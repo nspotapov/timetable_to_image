@@ -3,7 +3,8 @@ from TimetableToImage import Timetable
 
 
 class Week:
-    DAYS_NAME = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    DAYS_NAME_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    DAYS_NAME_EN = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
 
     def __init__(self):
         self.begin = None

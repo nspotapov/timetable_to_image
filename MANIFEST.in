@@ -1,3 +1,3 @@
-include src/fonts/Golos-UI/font_bold.ttf
-include src/fonts/Golos-UI/font_regular.ttf
-include src/fonts/Golos-UI/font_medium.ttf
+include src/TimetableToImage/Image/fonts/Golos-UI/font_bold.ttf
+include src/TimetableToImage/Image/fonts/Golos-UI/font_regular.ttf
+include src/TimetableToImage/Image/fonts/Golos-UI/font_medium.ttf

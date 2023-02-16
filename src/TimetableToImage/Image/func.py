@@ -1,5 +1,7 @@
 import os
 import datetime
+import textwrap
+
 from TimetableToImage import Timetable
 from PIL import Image, ImageDraw, ImageFont
 
@@ -46,6 +48,61 @@ def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
     return shift_x, shift_y
 
 
+def get_splitted_string(lesson: Timetable.Lesson, limit):
+    """
+    Return lesson text splitted by symbols limit in string
+
+    :param lesson:
+    :param limit:
+    :return:
+    """
+    room = ""
+    for letter in lesson.room:
+        if letter != ' ':
+            room += letter
+
+    teacher = lesson.teacher
+    teacher_words = teacher.split()
+    teacher_flag = True
+    if len(teacher_words) != 2:
+        teacher_flag = False
+
+    name = lesson.name
+    if teacher_flag:
+        t = ', '.join([name, teacher, room])
+    else:
+        t = name
+
+    if teacher_flag:
+        return textwrap.fill(text=t, width=limit)
+
+    t_lines = textwrap.wrap(text=t, width=limit)
+
+    last_line = t_lines[-1]
+
+    t_last_line = last_line + ', ' + teacher
+    t_wrap = textwrap.wrap(text=t_last_line, width=limit)
+    if len(t_wrap) > 1:
+        if len(textwrap.wrap(text=teacher + ',', width=limit)) == 1:
+            t_lines[-1] += ','
+            t_lines.append(teacher)
+
+    else:
+        t_lines.pop()
+        t_lines += t_wrap
+
+    last_line = t_lines[-1]
+    t_last = last_line + ', ' + room
+    if len(textwrap.wrap(text=t_last, width=limit)) == 1:
+        t_lines[-1] = t_last
+    else:
+        t_lines[-1] += ',\n' + room
+
+    string = '\n'.join(t_lines)
+
+    return string
+
+
 def generate_from_timetable_week(
         timetable_week: Timetable.Week,
         timetable_bells: Timetable.Bells = None,
@@ -75,7 +132,6 @@ def generate_from_timetable_week(
     font_size_header = 34
     font_size_table_large = 21
     font_size_table_small = 20
-    fonts_folder = "Golos-UI"
     #
     table_row_letters_count_large = 18
     table_row_letters_count_small = 22
@@ -104,46 +160,73 @@ def generate_from_timetable_week(
     y_top_text_article = y_top_table_header / 5
     x_left_text_group_name = x_left_text_article + 400
     #
-    if font_path is None:
-        font_path = "calibri.ttf"
+    font_path_regular = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
+                                     "font_regular.ttf")
+    font_path_medium = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
+                                    "font_medium.ttf")
+    font_path_bold = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
+                                  "font_bold.ttf")
+    #
+    font_exist = True
+    if not (os.path.exists(font_path_regular) and
+            os.path.exists(font_path_medium) and
+            os.path.exists(font_path_bold)):
+        font_exist = False
+        print(font_path_regular, font_path_medium, font_path_bold)
+    #
+    if font_path is not None or not font_exist:
+        if font_path is not None:
+            if not os.path.exists(font_path):
+                font_path = "calibri.ttf"
+        else:
+            font_path = "calibri.ttf"
+        font_path_regular = font_path
+        font_path_medium = font_path
+        font_path_bold = font_path
     #
     font_regular_article = ImageFont.truetype(
-        font_path, font_size_article)
+        font_path_regular, font_size_article)
     font_bold_article = ImageFont.truetype(
-        font_path, font_size_article)
+        font_path_bold, font_size_article)
     #
     font_regular_header = ImageFont.truetype(
-        font_path, font_size_header)
+        font_path_regular, font_size_header)
     font_medium_header = ImageFont.truetype(
-        font_path, font_size_header)
+        font_path_medium, font_size_header)
     font_bold_header = ImageFont.truetype(
-        font_path, font_size_header)
+        font_path_bold, font_size_header)
     #
     font_regular_table_large = ImageFont.truetype(
-        font_path, font_size_table_large)
+        font_path_regular, font_size_table_large)
     #
     font_regular_table_small = ImageFont.truetype(
-        font_path,
+        font_path_regular,
         font_size_table_small)
     #
-    text_timetable_for_group = "Расписание группы:"
-    if eng_lang:
-        text_timetable_for_group = "Timetable for group:"
-    # article "Timetable group: "
-    draw.text((x_left_text_article, y_top_text_article), text_timetable_for_group,
-              font=font_regular_article,
-              fill=content_color)
-
     # article promotion
     if text_promotion is not None:
         text_width, _ = get_multiline_text_size(text_promotion, font_regular_article)
-        draw.text(((width - text_width) / 2, y_top_text_article), text_promotion,
+        shift_x, shift_y = get_shifts_to_place_center(
+            text_promotion, font_regular_article,
+            place_width=width, place_height=y_top_table_header)
+        draw.text((shift_x, shift_y), text_promotion,
                   font=font_regular_article,
                   fill=content_color)
 
     if timetable_week.group:
+        text_timetable_for_group = "Расписание группы: "
+        if eng_lang:
+            text_timetable_for_group = "Timetable for group: "
+        # article "Timetable group: "
+        _, shift_y = get_shifts_to_place_center(text_timetable_for_group, font_regular_article,
+                                                place_height=y_top_table_header)
+        draw.text((x_left_text_article, shift_y), text_timetable_for_group,
+                  font=font_regular_article,
+                  fill=content_color)
         # article group name
-        draw.text((x_left_text_group_name, y_top_text_article), timetable_week.group,
+        _, shift_y = get_shifts_to_place_center(timetable_week.group, font_bold_article,
+                                                place_height=y_top_table_header)
+        draw.text((x_left_text_group_name, shift_y), timetable_week.group,
                   font=font_bold_article,
                   fill=content_color)
 
@@ -152,10 +235,17 @@ def generate_from_timetable_week(
         text_week = "Неделя:"
         if eng_lang:
             text_week = "Week:"
-        draw.text((width - 215, y_top_text_article), text_week,
+        _, shift_y = get_shifts_to_place_center(text_week, font_regular_article,
+                                                place_height=y_top_table_header)
+        t_w, t_h = get_multiline_text_size(text_week, font_regular_article)
+        draw.text((width - 215, shift_y), text_week,
                   font=font_regular_article,
                   fill=content_color)
-        draw.text((width - 55, y_top_text_article), str(timetable_week.number),
+        shift_x, shift_y = get_shifts_to_place_center(str(timetable_week.number), font_bold_article,
+                                                      place_width=215 - t_w,
+                                                      place_height=y_top_table_header)
+        t_w, t_h = get_multiline_text_size(str(timetable_week.number), font_bold_article)
+        draw.text((width - t_w - shift_x, shift_y), str(timetable_week.number),
                   font=font_bold_article,
                   fill=content_color)
 
@@ -164,7 +254,9 @@ def generate_from_timetable_week(
         week_begin = timetable_week.begin.strftime("%d.%m")
         week_end = timetable_week.end.strftime("%d.%m")
         text_period = f"{week_begin} - {week_end}"
-        draw.text((width - 500, y_top_text_article), text_period,
+        _, shift_y = get_shifts_to_place_center(text_period, font_bold_article,
+                                                place_height=y_top_table_header)
+        draw.text((width - 500, shift_y), text_period,
                   font=font_bold_article,
                   fill=content_color)
 
@@ -194,30 +286,50 @@ def generate_from_timetable_week(
     text_pair = "Пара"
     if eng_lang:
         text_pair = "Pair"
-    draw.text((15, y_top_table_header), text_pair, font=font_medium_header, fill=content_color)
+    shift_x, shift_y = get_shifts_to_place_center(
+        text_pair, font_medium_header,
+        place_width=x_left_table,
+        place_height=font_size_header * table_header_row_height_k)
+    draw.text((shift_x - table_lines_width / 2, y_top_table_header + shift_y), text_pair,
+              font=font_medium_header, fill=content_color)
 
     # text time
     text_time = "Время"
     if eng_lang:
         text_time = "Time"
-    draw.text((6, y_top_table_header + font_size_header * table_header_row_height_k), text_time,
+    shift_x, shift_y = get_shifts_to_place_center(
+        text_time, font_medium_header,
+        place_width=x_left_table,
+        place_height=font_size_header * table_header_row_height_k)
+    draw.text((shift_x - table_lines_width / 2,
+               y_top_table_header + font_size_header * table_header_row_height_k + shift_y),
+              text_time,
               font=font_medium_header, fill=content_color)
 
     # pair number and time
-    x_center_first_pair_col = (x_left_table + (x_left_table + table_col_width)) / 2
     for i in range(table_cols_count):
-        draw.text((x_center_first_pair_col - 10 + table_col_width * i, y_top_table_header),
+        shift_x, shift_y = get_shifts_to_place_center(
+            str(i + 1), font_medium_header,
+            place_width=table_col_width,
+            place_height=font_size_header * table_header_row_height_k)
+        draw.text((x_left_table + table_col_width * i + shift_x, y_top_table_header + shift_y),
                   str(i + 1),
                   font=font_medium_header, fill=content_color)
         if have_bells:
             bell = timetable_bells.bells[i]
             bell: Timetable.Bell
             text_time = f"{bell.begin.strftime('%H:%M')}-{bell.end.strftime('%H:%M')}"
-            draw.text((x_left_table + 20 + table_col_width * i,
-                       y_top_table_header + font_size_header * table_header_row_height_k),
+            shift_x, shift_y = get_shifts_to_place_center(
+                text_time, font_medium_header,
+                place_width=table_col_width,
+                place_height=font_size_header * table_header_row_height_k)
+            draw.text((x_left_table + table_col_width * i + shift_x,
+                       y_top_table_header + font_size_header * table_header_row_height_k + shift_y),
                       text_time,
                       font=font_medium_header, fill=content_color)
-
+    DAYS_NAME = Timetable.Week.DAYS_NAME_RU
+    if eng_lang:
+        DAYS_NAME = Timetable.Week.DAYS_NAME_EN
     # pairs by days
     for i in range(len(timetable_week.days)):
         timetable_day = timetable_week.days[i]
@@ -234,7 +346,7 @@ def generate_from_timetable_week(
                       font=font_regular_header, fill=content_color)
         # write day of week
         draw.text((35, y_top_table + y_shift_day_name + table_row_height * i),
-                  Timetable.Week.DAYS_NAME[i],
+                  DAYS_NAME[i],
                   font=font_bold_header, fill=content_color)
         # write timetable
         x_left_pair = x_left_table
@@ -250,7 +362,7 @@ def generate_from_timetable_week(
                 row_split = table_row_letters_count_small
             for v, lesson in enumerate(timetable_pair.lessons):
                 lesson: Timetable.Lesson
-                text_lesson = lesson.get_splitted_string(row_split)
+                text_lesson = get_splitted_string(lesson, row_split)
                 text_width, text_height = get_multiline_text_size(text_lesson, lesson_font)
                 # try write text into cell
                 target_height = table_row_height - table_lines_width
@@ -263,9 +375,9 @@ def generate_from_timetable_week(
                     while text_height > target_height:
                         ind += 1
                         new_text_font = ImageFont.truetype(
-                            font_path,
+                            font_path_regular,
                             new_text_font.size - 1)
-                        text_lesson = lesson.get_splitted_string(row_split + ind)
+                        text_lesson = get_splitted_string(lesson, row_split + ind)
                         text_width, text_height = get_multiline_text_size(text_lesson,
                                                                           new_text_font)
                         lesson_font = new_text_font
