@@ -380,6 +380,13 @@ def generate_from_timetable_week(
                         text_lesson = get_splitted_string(lesson, row_split + ind)
                         text_width, text_height = get_multiline_text_size(text_lesson,
                                                                           new_text_font)
+                        if text_width > table_col_width - table_lines_width:
+                            while text_width > table_col_width - table_lines_width:
+                                ind -= 1
+                                text_lesson = get_splitted_string(lesson, row_split + ind)
+                                text_width, text_height = get_multiline_text_size(text_lesson,
+                                                                                  new_text_font)
+
                         lesson_font = new_text_font
 
                 x_shift = (table_col_width - text_width) / 2
