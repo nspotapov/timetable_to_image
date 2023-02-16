@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "timetable-to-image"
-version = "1.0.5"
+version = "1.0.6"
 description = "The Python library provides functionality for generating a timetable image from an object representation"
 readme = "README.md"
 authors = [{ name = "potapovns", email = "ns.potapov73@gmail.com" }]
@@ -27,7 +27,7 @@ dev = ["bumpver", "pytest"]
 Homepage = "https://github.com/potapovns/timetable_to_image"
 
 [tool.bumpver]
-current_version = "1.0.5"
+current_version = "1.0.6"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true
