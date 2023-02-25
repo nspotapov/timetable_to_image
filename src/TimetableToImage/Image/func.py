@@ -1,12 +1,13 @@
 import os
 import datetime
 import textwrap
+from typing import Tuple
 
 from TimetableToImage import Timetable
 from PIL import Image, ImageDraw, ImageFont
 
 
-def get_multiline_text_size(text_string: str, font: ImageFont.FreeTypeFont) -> tuple:
+def get_multiline_text_size(text_string: str, font: ImageFont.FreeTypeFont) -> Tuple[int, int]:
     """
     Calculate size (width, height) of multiline text by text and font
 
@@ -25,7 +26,7 @@ def get_multiline_text_size(text_string: str, font: ImageFont.FreeTypeFont) -> t
 
 
 def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
-                               place_width: int = None, place_height: int = None) -> tuple:
+                               place_width: int = None, place_height: int = None) -> Tuple[int, int]:
     """
     Returns shift for draw text center of place
 
@@ -48,7 +49,7 @@ def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
     return shift_x, shift_y
 
 
-def get_splitted_string(lesson: Timetable.Lesson, limit):
+def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
     """
     Return lesson text splitted by symbols limit in string
 
@@ -109,10 +110,12 @@ def generate_from_timetable_week(
         inverted: bool = False,
         text_promotion: str = None,
         eng_lang: bool = False,
-        font_path: str = None) -> Image:
+        font_path: str = None,
+        resolution: Tuple[int, int] = (1920, 1080)) -> Image:
     """
     Generate FULL-HD image of timetable
 
+    :param resolution: resolution of result image (default FullHD: 1920x1080)
     :param font_path: path to font
     :param timetable_week: Timetable.Week object
     :param timetable_bells: Timetable.Bells object
@@ -121,30 +124,30 @@ def generate_from_timetable_week(
     :param eng_lang: set English language of headers and articles
     :return:
     """
-    width = 1920
-    height = 1080
+    width, height = resolution
+    full_hd = True if resolution == (1920, 1080) else False
     #
     have_bells = False
     if timetable_bells is not None:
         have_bells = True
     #
-    font_size_article = 40
-    font_size_header = 34
-    font_size_table_large = 21
-    font_size_table_small = 20
+    font_size_article = 30 if not full_hd else 40  # 40
+    font_size_header = 24 if not full_hd else 34  # 34
+    font_size_table_large = 13 if not full_hd else 21  # 21
+    font_size_table_small = 10 if not full_hd else 20  # 20
     #
-    table_row_letters_count_large = 18
-    table_row_letters_count_small = 22
+    table_row_letters_count_large = 19 if not full_hd else 18  # 18
+    table_row_letters_count_small = 24 if not full_hd else 22  # 22
     #
     color_white = (255, 255, 255)
     color_black = (0, 0, 0)
     content_color = color_black
     background_color = color_white
-    table_lines_width = 4
+    table_lines_width = 2 if not full_hd else 4
     if inverted:
         content_color = (202, 202, 232)
         background_color = (23, 33, 43)
-        table_lines_width = 2
+        table_lines_width = 1 if not full_hd else 2
     #
     image = Image.new("RGB", (width, height), background_color)
     draw = ImageDraw.Draw(image)
@@ -158,7 +161,6 @@ def generate_from_timetable_week(
     x_left_text_article = 5
     y_top_table_header = font_size_article * article_height_k
     y_top_text_article = y_top_table_header / 5
-    x_left_text_group_name = x_left_text_article + 400
     #
     font_path_regular = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
                                      "font_regular.ttf")
@@ -224,9 +226,11 @@ def generate_from_timetable_week(
                   font=font_regular_article,
                   fill=content_color)
         # article group name
+        x_left_text_group_name, _ = get_multiline_text_size(text_timetable_for_group,
+                                                            font_regular_article)
         _, shift_y = get_shifts_to_place_center(timetable_week.group, font_bold_article,
                                                 place_height=y_top_table_header)
-        draw.text((x_left_text_group_name, shift_y), timetable_week.group,
+        draw.text((x_left_text_article + x_left_text_group_name + 20, shift_y), timetable_week.group,
                   font=font_bold_article,
                   fill=content_color)
 
@@ -238,12 +242,15 @@ def generate_from_timetable_week(
         _, shift_y = get_shifts_to_place_center(text_week, font_regular_article,
                                                 place_height=y_top_table_header)
         t_w, t_h = get_multiline_text_size(text_week, font_regular_article)
-        draw.text((width - 215, shift_y), text_week,
+        x_left_text_week = width - 10 - 10 - get_multiline_text_size("99", font_bold_article)[
+            0] - t_w
+        draw.text((x_left_text_week, shift_y), text_week,
                   font=font_regular_article,
                   fill=content_color)
-        shift_x, shift_y = get_shifts_to_place_center(str(timetable_week.number), font_bold_article,
-                                                      place_width=215 - t_w,
-                                                      place_height=y_top_table_header)
+        shift_x, shift_y = get_shifts_to_place_center(
+            str(timetable_week.number), font_bold_article,
+            place_width=10 + 10 + get_multiline_text_size("99", font_bold_article)[0],
+            place_height=y_top_table_header)
         t_w, t_h = get_multiline_text_size(str(timetable_week.number), font_bold_article)
         draw.text((width - t_w - shift_x, shift_y), str(timetable_week.number),
                   font=font_bold_article,
@@ -254,9 +261,10 @@ def generate_from_timetable_week(
         week_begin = timetable_week.begin.strftime("%d.%m")
         week_end = timetable_week.end.strftime("%d.%m")
         text_period = f"{week_begin} - {week_end}"
+        text_period_width, _ = get_multiline_text_size(text_period, font_bold_article)
         _, shift_y = get_shifts_to_place_center(text_period, font_bold_article,
                                                 place_height=y_top_table_header)
-        draw.text((width - 500, shift_y), text_period,
+        draw.text((x_left_text_week - 20 - text_period_width, shift_y), text_period,
                   font=font_bold_article,
                   fill=content_color)
 
@@ -334,20 +342,22 @@ def generate_from_timetable_week(
     for i in range(len(timetable_week.days)):
         timetable_day = timetable_week.days[i]
         timetable_day: Timetable.Day
-        y_shift_day_name = 50
+        text_day = DAYS_NAME[i]
         # if date set - write it
         if timetable_day.date is not None:
-            y_shift_day_name = 40
             day_date = timetable_day.date
             day_date: datetime.date
             text_date = day_date.strftime("%d.%m")
-            draw.text((15, y_top_table + 90 + table_row_height * i),
-                      text_date,
-                      font=font_regular_header, fill=content_color)
+            text_day += "\n" + text_date
         # write day of week
-        draw.text((35, y_top_table + y_shift_day_name + table_row_height * i),
-                  DAYS_NAME[i],
-                  font=font_bold_header, fill=content_color)
+        x_shift, y_shift = get_shifts_to_place_center(
+            text_day,
+            font_bold_header,
+            place_width=x_left_table,
+            place_height=int(table_row_height)
+        )
+        draw.text((x_shift - table_lines_width, y_top_table + y_shift + table_row_height * i),
+                  text_day, font=font_bold_header, fill=content_color, align="center")
         # write timetable
         x_left_pair = x_left_table
         for j, timetable_pair in enumerate(timetable_day.pairs):
