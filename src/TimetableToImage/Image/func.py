@@ -104,6 +104,15 @@ def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
     return string
 
 
+def get_table_row_letters_count(font, column_width):
+    text_width = 0
+    letters_count = 0
+    while text_width < column_width:
+        letters_count += 1
+        text_width, _ = get_multiline_text_size("д" * letters_count, font)
+    return letters_count - 1
+
+
 def generate_from_timetable_week(
         timetable_week: Timetable.Week,
         timetable_bells: Timetable.Bells = None,
@@ -131,13 +140,10 @@ def generate_from_timetable_week(
     if timetable_bells is not None:
         have_bells = True
     #
-    font_size_article = 30 if not full_hd else 40  # 40
-    font_size_header = 24 if not full_hd else 34  # 34
-    font_size_table_large = 13 if not full_hd else 21  # 21
-    font_size_table_small = 10 if not full_hd else 20  # 20
-    #
-    table_row_letters_count_large = 19 if not full_hd else 18  # 18
-    table_row_letters_count_small = 24 if not full_hd else 22  # 22
+    font_size_article = 28 if not full_hd else 38
+    font_size_header = 18 if not full_hd else 30
+    font_size_table_large = 13 if not full_hd else 21
+    font_size_table_small = 12 if not full_hd else 20
     #
     color_white = (255, 255, 255)
     color_black = (0, 0, 0)
@@ -151,16 +157,6 @@ def generate_from_timetable_week(
     #
     image = Image.new("RGB", (width, height), background_color)
     draw = ImageDraw.Draw(image)
-    #
-    article_height_k = 2
-    table_header_row_height_k = 1.4
-    table_header_rows_count = 2
-    table_rows_count = 6
-    table_left_header_width = 120
-    table_cols_count = 8
-    x_left_text_article = 5
-    y_top_table_header = font_size_article * article_height_k
-    y_top_text_article = y_top_table_header / 5
     #
     font_path_regular = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
                                      "font_regular.ttf")
@@ -205,6 +201,15 @@ def generate_from_timetable_week(
         font_path_regular,
         font_size_table_small)
     #
+    article_height_k = 1.5
+    table_header_row_height_k = 1.4
+    table_header_rows_count = 2
+    table_rows_count = 6
+    table_left_header_width = get_multiline_text_size("00.00", font_bold_header)[0] + 20  # 60
+    table_cols_count = 8
+    x_left_text_article = 5
+    y_top_table_header = font_size_article * article_height_k
+    y_top_text_article = y_top_table_header / 5
     # article promotion
     if text_promotion is not None:
         text_width, _ = get_multiline_text_size(text_promotion, font_regular_article)
@@ -290,51 +295,56 @@ def generate_from_timetable_week(
                    x_left_table + table_col_width * i, height), fill=content_color,
                   width=table_lines_width)
 
+    table_row_letters_count_large = get_table_row_letters_count(font_regular_table_large,
+                                                                table_col_width - table_lines_width)
+    table_row_letters_count_small = get_table_row_letters_count(font_regular_table_small,
+                                                                table_col_width - table_lines_width)
+
     # text pair
     text_pair = "Пара"
     if eng_lang:
         text_pair = "Pair"
     shift_x, shift_y = get_shifts_to_place_center(
-        text_pair, font_medium_header,
+        text_pair, font_regular_header,
         place_width=x_left_table,
         place_height=font_size_header * table_header_row_height_k)
     draw.text((shift_x - table_lines_width / 2, y_top_table_header + shift_y), text_pair,
-              font=font_medium_header, fill=content_color)
+              font=font_regular_header, fill=content_color)
 
     # text time
     text_time = "Время"
     if eng_lang:
         text_time = "Time"
     shift_x, shift_y = get_shifts_to_place_center(
-        text_time, font_medium_header,
+        text_time, font_regular_header,
         place_width=x_left_table,
         place_height=font_size_header * table_header_row_height_k)
     draw.text((shift_x - table_lines_width / 2,
                y_top_table_header + font_size_header * table_header_row_height_k + shift_y),
               text_time,
-              font=font_medium_header, fill=content_color)
+              font=font_regular_header, fill=content_color)
 
     # pair number and time
     for i in range(table_cols_count):
         shift_x, shift_y = get_shifts_to_place_center(
-            str(i + 1), font_medium_header,
+            str(i + 1), font_regular_header,
             place_width=table_col_width,
             place_height=font_size_header * table_header_row_height_k)
         draw.text((x_left_table + table_col_width * i + shift_x, y_top_table_header + shift_y),
                   str(i + 1),
-                  font=font_medium_header, fill=content_color)
+                  font=font_regular_header, fill=content_color)
         if have_bells:
             bell = timetable_bells.bells[i]
             bell: Timetable.Bell
             text_time = f"{bell.begin.strftime('%H:%M')}-{bell.end.strftime('%H:%M')}"
             shift_x, shift_y = get_shifts_to_place_center(
-                text_time, font_medium_header,
+                text_time, font_regular_header,
                 place_width=table_col_width,
                 place_height=font_size_header * table_header_row_height_k)
             draw.text((x_left_table + table_col_width * i + shift_x,
                        y_top_table_header + font_size_header * table_header_row_height_k + shift_y),
                       text_time,
-                      font=font_medium_header, fill=content_color)
+                      font=font_regular_header, fill=content_color)
     DAYS_NAME = Timetable.Week.DAYS_NAME_RU
     if eng_lang:
         DAYS_NAME = Timetable.Week.DAYS_NAME_EN
@@ -374,7 +384,7 @@ def generate_from_timetable_week(
                 lesson: Timetable.Lesson
                 text_lesson = get_splitted_string(lesson, row_split)
                 text_width, text_height = get_multiline_text_size(text_lesson, lesson_font)
-                # try write text into cell
+                # try to write text into cell
                 target_height = table_row_height - table_lines_width
                 if not single_lesson:
                     target_height = table_row_height / 2 - table_lines_width
@@ -387,15 +397,11 @@ def generate_from_timetable_week(
                         new_text_font = ImageFont.truetype(
                             font_path_regular,
                             new_text_font.size - 1)
-                        text_lesson = get_splitted_string(lesson, row_split + ind)
+                        new_limit = get_table_row_letters_count(new_text_font,
+                                                                table_col_width - table_lines_width)
+                        text_lesson = get_splitted_string(lesson, new_limit)
                         text_width, text_height = get_multiline_text_size(text_lesson,
                                                                           new_text_font)
-                        if text_width > table_col_width - table_lines_width:
-                            while text_width > table_col_width - table_lines_width:
-                                ind -= 1
-                                text_lesson = get_splitted_string(lesson, row_split + ind)
-                                text_width, text_height = get_multiline_text_size(text_lesson,
-                                                                                  new_text_font)
 
                         lesson_font = new_text_font
 
