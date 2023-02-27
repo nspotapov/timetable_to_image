@@ -1,4 +1,5 @@
 import os
+import copy
 import datetime
 import textwrap
 from typing import Tuple
@@ -7,10 +8,14 @@ from TimetableToImage import Timetable
 from PIL import Image, ImageDraw, ImageFont
 
 
-def get_multiline_text_size(text_string: str, font: ImageFont.FreeTypeFont) -> Tuple[int, int]:
+def get_multiline_text_size(
+        text_string: str,
+        font: ImageFont.FreeTypeFont,
+        interval: float = 1.0) -> Tuple[float, float]:
     """
     Calculate size (width, height) of multiline text by text and font
 
+    :param interval:
     :param text_string:
     :param font:
     :return: Tuple of width and height
@@ -22,21 +27,24 @@ def get_multiline_text_size(text_string: str, font: ImageFont.FreeTypeFont) -> T
     for line in strings:
         text_width = max(font.getmask(line).getbbox()[2], text_width)
     text_height = (ascent + descent) * len(strings)
-    return text_width, text_height
+    return text_width, text_height * interval
 
 
 def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
-                               place_width: int = None, place_height: int = None) -> Tuple[int, int]:
+                               place_width: float = None,
+                               place_height: float = None,
+                               interval: float = 1.0) -> Tuple[float, float]:
     """
     Returns shift for draw text center of place
 
+    :param interval:
     :param text:
     :param font:
     :param place_width:
     :param place_height:
     :return: tuple of shifts
     """
-    text_width, text_height = get_multiline_text_size(text, font)
+    text_width, text_height = get_multiline_text_size(text, font, interval=interval)
 
     shift_x = None
     shift_y = None
@@ -104,13 +112,171 @@ def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
     return string
 
 
-def get_table_row_letters_count(font, column_width):
+def get_table_row_letters_count(font: ImageFont.FreeTypeFont, column_width: float) -> int:
+    """
+    Function calculate letters number in row with font by average symbol
+    :param font:
+    :param column_width:
+    :return: letters count
+    """
     text_width = 0
     letters_count = 0
     while text_width < column_width:
         letters_count += 1
         text_width, _ = get_multiline_text_size("д" * letters_count, font)
     return letters_count - 1
+
+
+def draw_multiline_text(
+        text: str,
+        draw: ImageDraw.ImageDraw,
+        position: Tuple[float, float],
+        font: ImageFont.FreeTypeFont,
+        color: Tuple[int, int, int],
+        centered: bool = False,
+        interval: float = 1.0) -> None:
+    if not text:
+        return
+    text_split = text.split("\n")
+    x_left, y_top = position
+    line_width = 0
+    line_height = 0
+    for line in text_split:
+        tw, th = get_multiline_text_size(line, font, interval)
+        line_width = max(tw, line_width)
+        line_height = max(th, line_height)
+    punc = ",. "
+    for i, line in enumerate(text_split):
+        if line[0] in punc:
+            line = line[1:].strip()
+        draw.text(
+            xy=(
+                x_left + ((line_width - get_multiline_text_size(line, font, interval)[
+                    0]) / 2 if centered else 0),
+                y_top + line_height * interval * i
+            ),
+            text=line,
+            fill=color,
+            font=font
+        )
+
+
+def draw_pair_on_image(draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont,
+                       color: Tuple[int, int, int], pair: Timetable.Pair,
+                       x_left_cell: float, y_top_cell: float,
+                       width_cell: float, height_cell: float,
+                       lines_width: float = 0) -> None:
+    # If not lessons in pair - return
+    if len(pair.lessons) == 0:
+        return
+    # Interval between lines
+    interval = 1.0
+    # Calculate truth pair size and position
+    width_pair = width_lesson = width_cell - lines_width
+    height_pair = height_cell - lines_width
+    x_left_pair = x_left_lesson = x_left_cell + lines_width / 2
+    y_top_pair = y_top_cell + lines_width / 2
+
+    # Optimizing lessons name (next same lesson name removed)
+    i = 0
+    optimized_lessons = []
+    while i < len(pair.lessons):
+        curr_lesson: Timetable.Lesson = copy.copy(pair.lessons[i])
+        if i != 0:
+            prev_lesson: Timetable.Lesson = pair.lessons[i - 1]
+            if prev_lesson.name == curr_lesson.name:
+                new_lesson = Timetable.Lesson()
+                new_lesson.name = ""
+                new_lesson.group = prev_lesson.group
+                new_lesson.teacher = prev_lesson.teacher
+                new_lesson.room = prev_lesson.room
+                optimized_lessons[-1].teacher = ""
+                optimized_lessons[-1].room = ""
+                optimized_lessons.append(new_lesson)
+                curr_lesson.name = ""
+        optimized_lessons.append(curr_lesson)
+        i += 1
+
+    # Calculate lessons height
+    height_lesson = height_pair / len(optimized_lessons)
+
+    # Optimal drawing lessons in cell
+    for i, lesson in enumerate(optimized_lessons):
+        y_top_lesson = y_top_pair + height_lesson * i
+        text_lesson_split_height = 0
+        text_lesson = str(lesson)
+        text_lesson_split = ""
+        font_lesson = font
+        first = True
+        while (text_lesson_split_height > height_lesson or first) and font_lesson.size > 9:
+            if not first:
+                font_lesson = ImageFont.truetype(
+                    font_lesson.path,
+                    font_lesson.size - 1
+                )
+            first = False
+            letters_count_limit = get_table_row_letters_count(
+                font_lesson, width_lesson
+            )
+            text_lesson_split = textwrap.fill(
+                text_lesson,
+                width=letters_count_limit
+            )
+            text_lesson_split_width, text_lesson_split_height = get_multiline_text_size(
+                text_lesson_split, font, interval
+            )
+
+        if text_lesson_split_height > height_lesson:
+            text_lesson_cutted = text_lesson.split(", ")
+            lesson_name = text_lesson_cutted[0][:text_lesson_cutted[0].find(" и ")]
+            text_lesson = ", ".join([lesson_name] + text_lesson_cutted[1:])
+            font_lesson = font
+            while (text_lesson_split_height > height_lesson or first) and font_lesson.size > 9:
+                if not first:
+                    font_lesson = ImageFont.truetype(
+                        font_lesson.path,
+                        font_lesson.size - 1
+                    )
+                first = False
+                letters_count_limit = get_table_row_letters_count(
+                    font_lesson, width_lesson
+                )
+                text_lesson_split = textwrap.fill(
+                    text_lesson,
+                    width=letters_count_limit
+                )
+                text_lesson_split_width, text_lesson_split_height = get_multiline_text_size(
+                    text_lesson_split, font, interval
+                )
+
+        x_shift_lesson, y_shift_lesson = get_shifts_to_place_center(
+            text_lesson_split, font_lesson,
+            place_width=width_lesson,
+            place_height=height_lesson,
+            interval=interval
+        )
+        # draw.multiline_text(
+        #     (
+        #         x_left_lesson + x_shift_lesson,
+        #         y_top_lesson + y_shift_lesson
+        #     ),
+        #     text_lesson_split,
+        #     font=font_lesson,
+        #     fill=color,
+        #     align="center"
+        # )
+        draw_multiline_text(
+            position=(
+                x_left_lesson + x_shift_lesson,
+                y_top_lesson + y_shift_lesson
+            ),
+            text=text_lesson_split,
+            font=font_lesson,
+            color=color,
+            centered=True,
+            draw=draw,
+            interval=interval
+        )
 
 
 def generate_from_timetable_week(
@@ -157,12 +323,14 @@ def generate_from_timetable_week(
     #
     image = Image.new("RGB", (width, height), background_color)
     draw = ImageDraw.Draw(image)
+    font_folder = "Golos-UI"
+    # font_folder = "ubuntumono"
     #
-    font_path_regular = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
+    font_path_regular = os.path.join(os.path.dirname(__file__), "fonts", font_folder,
                                      "font_regular.ttf")
-    font_path_medium = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
+    font_path_medium = os.path.join(os.path.dirname(__file__), "fonts", font_folder,
                                     "font_medium.ttf")
-    font_path_bold = os.path.join(os.path.dirname(__file__), "fonts", "Golos-UI",
+    font_path_bold = os.path.join(os.path.dirname(__file__), "fonts", font_folder,
                                   "font_bold.ttf")
     #
     font_exist = True
@@ -372,56 +540,68 @@ def generate_from_timetable_week(
         x_left_pair = x_left_table
         for j, timetable_pair in enumerate(timetable_day.pairs):
             timetable_pair: Timetable.Pair
-            y_top_pair = y_top_table + table_row_height * i
-            lesson_font = font_regular_table_large
-            row_split = table_row_letters_count_large
-            single_lesson = True
-            if len(timetable_pair.lessons) > 1:
-                single_lesson = False
-                lesson_font = font_regular_table_small
-                row_split = table_row_letters_count_small
-            for v, lesson in enumerate(timetable_pair.lessons):
-                lesson: Timetable.Lesson
-                text_lesson = get_splitted_string(lesson, row_split)
-                text_width, text_height = get_multiline_text_size(text_lesson, lesson_font)
-                # try to write text into cell
-                target_height = table_row_height - table_lines_width
-                if not single_lesson:
-                    target_height = table_row_height / 2 - table_lines_width
-                if text_height > target_height:
-                    # if it doesn't fit, then change the font until it fits.
-                    new_text_font = lesson_font
-                    ind = 0
-                    while text_height > target_height:
-                        ind += 1
-                        new_text_font = ImageFont.truetype(
-                            font_path_regular,
-                            new_text_font.size - 1)
-                        new_limit = get_table_row_letters_count(new_text_font,
-                                                                table_col_width - table_lines_width)
-                        text_lesson = get_splitted_string(lesson, new_limit)
-                        text_width, text_height = get_multiline_text_size(text_lesson,
-                                                                          new_text_font)
-
-                        lesson_font = new_text_font
-
-                x_shift = (table_col_width - text_width) / 2
-                if single_lesson:
-                    y_shift = (table_row_height - text_height) / 2
-                else:
-                    y_shift = (table_row_height / 2 - text_height) / 2
-                    if v == 1:
-                        y_shift = (table_row_height / 2 - text_height) / 2 + table_row_height / 2
-
-                draw.multiline_text(
-                    (
-                        x_left_pair + x_shift + table_col_width * j,
-                        y_top_pair + y_shift
-                    ),
-                    text_lesson,
-                    font=lesson_font,
-                    fill=content_color,
-                    align="center"
-                )
+            draw_pair_on_image(
+                draw,
+                font_regular_table_large,
+                content_color,
+                timetable_pair,
+                x_left_table + table_col_width * j,
+                y_top_table + table_row_height * i,
+                table_col_width,
+                table_row_height,
+                table_lines_width
+            )
+            # y_top_pair = y_top_table + table_row_height * i
+            # lesson_font = font_regular_table_large
+            # row_split = table_row_letters_count_large
+            # single_lesson = True
+            # if len(timetable_pair.lessons) > 1:
+            #     single_lesson = False
+            #     lesson_font = font_regular_table_small
+            #     row_split = table_row_letters_count_small
+            #
+            # for v, lesson in enumerate(timetable_pair.lessons):
+            #     lesson: Timetable.Lesson
+            #     text_lesson = get_splitted_string(lesson, row_split)
+            #     text_width, text_height = get_multiline_text_size(text_lesson, lesson_font)
+            #     # try to write text into cell
+            #     target_height = table_row_height - table_lines_width
+            #     if not single_lesson:
+            #         target_height = table_row_height / 2 - table_lines_width
+            #     if text_height > target_height:
+            #         # if it doesn't fit, then change the font until it fits.
+            #         new_text_font = lesson_font
+            #         ind = 0
+            #         while text_height > target_height:
+            #             ind += 1
+            #             new_text_font = ImageFont.truetype(
+            #                 font_path_regular,
+            #                 new_text_font.size - 1)
+            #             new_limit = get_table_row_letters_count(new_text_font,
+            #                                                     table_col_width - table_lines_width)
+            #             text_lesson = get_splitted_string(lesson, new_limit)
+            #             text_width, text_height = get_multiline_text_size(text_lesson,
+            #                                                               new_text_font)
+            #
+            #             lesson_font = new_text_font
+            #
+            #     x_shift = (table_col_width - text_width) / 2
+            #     if single_lesson:
+            #         y_shift = (table_row_height - text_height) / 2
+            #     else:
+            #         y_shift = (table_row_height / 2 - text_height) / 2
+            #         if v == 1:
+            #             y_shift = (table_row_height / 2 - text_height) / 2 + table_row_height / 2
+            #
+            #     draw.multiline_text(
+            #         (
+            #             x_left_pair + x_shift + table_col_width * j,
+            #             y_top_pair + y_shift
+            #         ),
+            #         text_lesson,
+            #         font=lesson_font,
+            #         fill=content_color,
+            #         align="center"
+            #     )
     #
     return image

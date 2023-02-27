@@ -9,4 +9,5 @@ class Lesson:
         self.teacher = None
 
     def __str__(self):
-        return ', '.join([self.name, self.teacher, self.room])
+        data = [x for x in [self.name, self.teacher, self.room] if x != ""]
+        return ', '.join(data)
