@@ -20,6 +20,7 @@ def get_multiline_text_size(
     :param font:
     :return: Tuple of width and height
     """
+    text_string = text_string.strip()
     if not text_string:
         return 0, 0
     # https://stackoverflow.com/a/46220683/9263761
@@ -114,6 +115,8 @@ def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
         t_lines[-1] += ',\n' + room
 
     string = '\n'.join(t_lines)
+
+    string = string.strip()
 
     return string
 
