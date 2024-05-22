@@ -62,76 +62,18 @@ def get_shifts_to_place_center(text: str, font: ImageFont.FreeTypeFont,
     return shift_x, shift_y
 
 
-def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
+def get_wrapped_string(lesson: Timetable.Lesson, limit: int) -> str:
     """
-    Return lesson text splitted by symbols limit in string
+    Return lesson text wrapped by symbols limit in string
 
     :param lesson:
     :param limit:
     :return:
     """
-    try:
-        room = ""
-        for letter in lesson.room:
-            if letter != ' ':
-                room += letter
-
-        teacher = lesson.teacher
-        teacher_words = teacher.split()
-        teacher_flag = True
-        if len(teacher_words) != 2:
-            teacher_flag = False
-
-        name = lesson.name
-        if teacher_flag:
-            t = ', '.join([name, teacher, room])
-        else:
-            t = name
-
-        if teacher_flag:
-            obj = textwrap.fill(text=t, width=limit)
-            if isinstance(obj, list):
-                obj = ' '.join(obj)
-            return obj
-
-        t_lines = textwrap.wrap(text=t, width=limit)
-
-        if t_lines:
-            last_line = t_lines[-1]
-        else:
-            last_line = ""
-
-        t_last_line = last_line + ', ' + teacher
-        t_wrap = textwrap.wrap(text=t_last_line, width=limit)
-        if len(t_wrap) > 1:
-            if len(textwrap.wrap(text=teacher + ',', width=limit)) == 1:
-                t_lines[-1] += ','
-                t_lines.append(teacher)
-
-        else:
-            if t_lines:
-                t_lines.pop()
-            t_lines += t_wrap
-
-        last_line = t_lines[-1]
-        t_last = last_line + ', ' + room
-        if len(textwrap.wrap(text=t_last, width=limit)) == 1:
-            t_lines[-1] = t_last
-        else:
-            t_lines[-1] += ',\n' + room
-
-        string = '\n'.join(t_lines)
-
-        string = string.strip()
-
-    except Exception:
-        string = ', '.join([lesson.name, lesson.teacher, lesson.room])
-        string = textwrap.wrap(text=string, width=limit)
-
-    if isinstance(string, list):
-        string = ' '.join(string)
-
-    return string
+    lesson_info = str(lesson)
+    wrapped_lines = textwrap.wrap(lesson_info, width=limit, break_long_words=False, break_on_hyphens=False)
+    result = '\n'.join(wrapped_lines)
+    return result
 
 
 def get_table_row_letters_count(font: ImageFont.FreeTypeFont, column_width: float) -> int:
@@ -239,7 +181,7 @@ def draw_pair_on_image(draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont,
             letters_count_limit = get_table_row_letters_count(
                 font_lesson, width_lesson
             )
-            text_lesson_split = get_splitted_string(lesson, letters_count_limit)
+            text_lesson_split = get_wrapped_string(lesson, letters_count_limit)
             text_lesson_split_width, text_lesson_split_height = get_multiline_text_size(
                 text_lesson_split, font, interval
             )
