@@ -70,7 +70,6 @@ def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
     :param limit:
     :return:
     """
-    string = ""
     try:
         room = ""
         for letter in lesson.room:
@@ -90,7 +89,10 @@ def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
             t = name
 
         if teacher_flag:
-            return textwrap.fill(text=t, width=limit)
+            obj = textwrap.fill(text=t, width=limit)
+            if isinstance(obj, list):
+                obj = ' '.join(obj)
+            return obj
 
         t_lines = textwrap.wrap(text=t, width=limit)
 
@@ -125,6 +127,9 @@ def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
     except Exception:
         string = ', '.join([lesson.name, lesson.teacher, lesson.room])
         string = textwrap.wrap(text=string, width=limit)
+
+    if isinstance(string, list):
+        string = ' '.join(string)
 
     return string
 
