@@ -71,7 +71,7 @@ def get_wrapped_string(lesson: Timetable.Lesson, limit: int) -> str:
     :return:
     """
     lesson_info = str(lesson)
-    wrapped_lines = textwrap.wrap(lesson_info, width=limit, break_long_words=False, break_on_hyphens=False)
+    wrapped_lines = textwrap.wrap(lesson_info, width=limit)
     result = '\n'.join(wrapped_lines)
     return result
 
