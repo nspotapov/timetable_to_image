@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "timetable-to-image"
-version = "1.2.2"
+version = "1.2.3"
 description = "The Python library provides functionality for generating a timetable image from an object representation"
 readme = "README.md"
 authors = [{ name = "potapovns", email = "ns.potapov73@gmail.com" }]
