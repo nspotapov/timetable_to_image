@@ -68,55 +68,61 @@ def get_splitted_string(lesson: Timetable.Lesson, limit: int) -> str:
     :param limit:
     :return:
     """
-    room = ""
-    for letter in lesson.room:
-        if letter != ' ':
-            room += letter
+    string = ""
+    try:
+        room = ""
+        for letter in lesson.room:
+            if letter != ' ':
+                room += letter
 
-    teacher = lesson.teacher
-    teacher_words = teacher.split()
-    teacher_flag = True
-    if len(teacher_words) != 2:
-        teacher_flag = False
+        teacher = lesson.teacher
+        teacher_words = teacher.split()
+        teacher_flag = True
+        if len(teacher_words) != 2:
+            teacher_flag = False
 
-    name = lesson.name
-    if teacher_flag:
-        t = ', '.join([name, teacher, room])
-    else:
-        t = name
+        name = lesson.name
+        if teacher_flag:
+            t = ', '.join([name, teacher, room])
+        else:
+            t = name
 
-    if teacher_flag:
-        return textwrap.fill(text=t, width=limit)
+        if teacher_flag:
+            return textwrap.fill(text=t, width=limit)
 
-    t_lines = textwrap.wrap(text=t, width=limit)
+        t_lines = textwrap.wrap(text=t, width=limit)
 
-    if t_lines:
-        last_line = t_lines[-1]
-    else:
-        last_line = ""
-
-    t_last_line = last_line + ', ' + teacher
-    t_wrap = textwrap.wrap(text=t_last_line, width=limit)
-    if len(t_wrap) > 1:
-        if len(textwrap.wrap(text=teacher + ',', width=limit)) == 1:
-            t_lines[-1] += ','
-            t_lines.append(teacher)
-
-    else:
         if t_lines:
-            t_lines.pop()
-        t_lines += t_wrap
+            last_line = t_lines[-1]
+        else:
+            last_line = ""
 
-    last_line = t_lines[-1]
-    t_last = last_line + ', ' + room
-    if len(textwrap.wrap(text=t_last, width=limit)) == 1:
-        t_lines[-1] = t_last
-    else:
-        t_lines[-1] += ',\n' + room
+        t_last_line = last_line + ', ' + teacher
+        t_wrap = textwrap.wrap(text=t_last_line, width=limit)
+        if len(t_wrap) > 1:
+            if len(textwrap.wrap(text=teacher + ',', width=limit)) == 1:
+                t_lines[-1] += ','
+                t_lines.append(teacher)
 
-    string = '\n'.join(t_lines)
+        else:
+            if t_lines:
+                t_lines.pop()
+            t_lines += t_wrap
 
-    string = string.strip()
+        last_line = t_lines[-1]
+        t_last = last_line + ', ' + room
+        if len(textwrap.wrap(text=t_last, width=limit)) == 1:
+            t_lines[-1] = t_last
+        else:
+            t_lines[-1] += ',\n' + room
+
+        string = '\n'.join(t_lines)
+
+        string = string.strip()
+
+    except Exception:
+        string = ', '.join([lesson.name, lesson.teacher, lesson.room])
+        string = textwrap.wrap(text=string, width=limit)
 
     return string
 
