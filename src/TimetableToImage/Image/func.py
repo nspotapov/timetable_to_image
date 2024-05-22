@@ -20,6 +20,8 @@ def get_multiline_text_size(
     :param font:
     :return: Tuple of width and height
     """
+    if isinstance(text_string, list):
+        text_string = ' '.join(text_string)
     text_string = text_string.strip()
     if not text_string:
         return 0, 0
